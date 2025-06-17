@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogadores Cadastrados</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Jogadores por Equipe</h1>
+
+        <% if (Object.keys(jogadoresPorEquipe).length > 0) { %>
+            <% for(let equipeId in jogadoresPorEquipe) { %>
+                <div class="team-group">
+                    <h2>Equipe: <%= jogadoresPorEquipe[equipeId].equipe.nomeEquipe %></h2>
+                    <div class="list-container">
+                        <% jogadoresPorEquipe[equipeId].jogadores.forEach(function(jogador) { %>
+                            <div class="list-item player-item">
+                                <p><strong>Nome:</strong> <%= jogador.nome %></p>
+                                <p><strong>Nº:</strong> <%= jogador.numero %></p>
+                                <p><strong>Posição:</strong> <%= jogador.posicao %></p>
+                                <p><strong>Altura:</strong> <%= jogador.altura %> cm</p>
+                                <p><strong>Nascimento:</strong> <%= new Date(jogador.nascimento).toLocaleDateString('pt-BR') %></p>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+            <% } %>
+        <% } else { %>
+            <p>Nenhum jogador cadastrado ainda.</p>
+        <% } %>
+
+        <div class="nav-links">
+            <a href="/cadastrar-jogador">Cadastrar Novo Jogador</a>
+            <a href="/menu">Voltar ao Menu</a>
+        </div>
+    </div>
+</body>
+</html>

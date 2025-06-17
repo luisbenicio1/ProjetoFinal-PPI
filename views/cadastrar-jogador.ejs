@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastrar Jogador</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Cadastrar Novo Jogador</h1>
+        
+        <% if (error) { %>
+            <p class="error"><%= error %></p>
+        <% } %>
+        <% if (success) { %>
+            <p class="success"><%= success %></p>
+        <% } %>
+
+        <form action="/cadastrar-jogador" method="post">
+            <label for="nome">Nome do Jogador:</label>
+            <input type="text" id="nome" name="nome" required>
+
+            <label for="numero">Número da Camisa:</label>
+            <input type="number" id="numero" name="numero" required>
+            
+            <label for="nascimento">Data de Nascimento:</label>
+            <input type="date" id="nascimento" name="nascimento" required>
+
+            <label for="altura">Altura (cm):</label>
+            <input type="number" id="altura" name="altura" required>
+
+            <label for="genero">Gênero:</label>
+            <select id="genero" name="genero" required>
+                <option value="">Selecione...</option>
+                <option value="Masculino">Masculino</option>
+                <option value="Feminino">Feminino</option>
+            </select>
+
+            <label for="posicao">Posição:</label>
+            <input type="text" id="posicao" name="posicao" placeholder="Ex: Levantador, Ponteiro" required>
+
+            <label for="equipeId">Equipe:</label>
+            <select id="equipeId" name="equipeId" required>
+                <option value="">Selecione a equipe</option>
+                <% equipes.forEach(function(equipe) { %>
+                    <option value="<%= equipe.id %>"><%= equipe.nomeEquipe %></option>
+                <% }); %>
+            </select>
+            
+            <button type="submit">Cadastrar Jogador</button>
+        </form>
+        
+        <div class="nav-links">
+            <a href="/menu">Voltar ao Menu</a>
+        </div>
+    </div>
+</body>
+</html>

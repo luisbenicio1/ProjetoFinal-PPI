@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastrar Equipe</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Cadastrar Nova Equipe</h1>
+        <form action="/cadastrar-equipe" method="post">
+            <label for="nomeEquipe">Nome da Equipe:</label>
+            <input type="text" id="nomeEquipe" name="nomeEquipe" required>
+            
+            <label for="nomeTecnico">Nome do Técnico:</label>
+            <input type="text" id="nomeTecnico" name="nomeTecnico" required>
+            
+            <label for="telefoneTecnico">Telefone do Técnico:</label>
+            <input type="text" id="telefoneTecnico" name="telefoneTecnico" required>
+            
+            <button type="submit">Cadastrar Equipe</button>
+        </form>
+        
+        <% if (error) { %>
+            <p class="error"><%= error %></p>
+        <% } %>
+        <% if (success) { %>
+            <p class="success"><%= success %></p>
+        <% } %>
+        
+        <div class="nav-links">
+            <a href="/menu">Voltar ao Menu</a>
+        </div>
+    </div>
+</body>
+</html>

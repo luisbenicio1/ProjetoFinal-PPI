@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equipes Cadastradas</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Equipes Cadastradas</h1>
+        
+        <% if (equipes.length > 0) { %>
+            <div class="list-container">
+                <% equipes.forEach(function(equipe) { %>
+                    <div class="list-item">
+                        <p><strong>Nome da Equipe:</strong> <%= equipe.nomeEquipe %></p>
+                        <p><strong>Técnico:</strong> <%= equipe.nomeTecnico %></p>
+                        <p><strong>Telefone:</strong> <%= equipe.telefoneTecnico %></p>
+                    </div>
+                <% }); %>
+            </div>
+        <% } else { %>
+            <p>Nenhuma equipe cadastrada ainda.</p>
+        <% } %>
+
+        <div class="nav-links">
+            <a href="/cadastrar-equipe">Cadastrar Nova Equipe</a>
+            <a href="/menu">Voltar ao Menu</a>
+        </div>
+    </div>
+</body>
+</html>

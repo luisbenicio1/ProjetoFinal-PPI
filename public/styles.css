@@ -1,0 +1,184 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    color: #333;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.container {
+    background: #fff;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 600px;
+}
+
+h1, h2 {
+    color: #483D8B; /* DarkSlateBlue */
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+}
+
+label {
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    color: #555;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="tel"],
+select {
+    padding: 10px;
+    margin-bottom: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+button, .button-link {
+    background-color: #8A2BE2; /* BlueViolet */
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    margin-top: 1rem;
+}
+
+button:hover, .button-link:hover {
+    background-color: #6A1B9A; /* Purple mais escuro */
+}
+
+.error {
+    color: #D32F2F;
+    background-color: #FFCDD2;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 1rem;
+    text-align: center;
+}
+
+.success {
+    color: #388E3C;
+    background-color: #C8E6C9;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 1rem;
+    text-align: center;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+
+.logout-button {
+    background-color: #666;
+    color: white;
+    padding: 8px 15px;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.logout-button:hover {
+    background-color: #444;
+}
+
+.last-access {
+    background-color: #E8EAF6;
+    color: #3F51B5;
+    text-align: center;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 2rem;
+}
+
+.menu-nav ul {
+    list-style: none;
+    padding: 0;
+}
+
+.menu-nav ul li {
+    margin: 10px 0;
+}
+
+.menu-nav ul li a {
+    display: block;
+    background-color: #8A2BE2;
+    color: white;
+    padding: 15px;
+    text-decoration: none;
+    border-radius: 4px;
+    text-align: center;
+    transition: background-color 0.3s;
+}
+
+.menu-nav ul li a:hover {
+    background-color: #6A1B9A;
+}
+
+.nav-links {
+    margin-top: 2rem;
+    text-align: center;
+}
+
+.nav-links a {
+    color: #8A2BE2;
+    text-decoration: none;
+    margin: 0 10px;
+    font-weight: bold;
+}
+
+.nav-links a:hover {
+    text-decoration: underline;
+}
+
+.list-container {
+    margin-top: 1rem;
+}
+
+.list-item {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+}
+
+.list-item p {
+    margin: 5px 0;
+}
+
+.team-group {
+    margin-bottom: 2rem;
+    padding: 1rem;
+    border: 1px solid #D1C4E9;
+    border-radius: 8px;
+}
+
+.player-item {
+    border-left: 5px solid #8A2BE2;
+}

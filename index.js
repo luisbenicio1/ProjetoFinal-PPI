@@ -48,18 +48,7 @@ app.post('/login', (req, res) =>
   const { username, password } = req.body;
   if (username === 'admin' && password === 'admin') {
     req.session.user = { username: 'admin' };
-    const agora = new Date();
-    const dataHoraFormatada = agora.toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      timeZone: 'America/Sao_Paulo'
-    });
-    res.cookie('ultimo_acesso', dataHoraFormatada, { maxAge: 900000, httpOnly: true });
-    res.redirect('/menu');
+    res.redirect('/menu'); // CORREÇÃO: Lógica do cookie removida daqui
   } else {
     res.render('login', { error: 'Usuário ou senha inválidos' });
   }
@@ -79,8 +68,23 @@ app.get('/', authMiddleware, (req, res) =>
 
 app.get('/menu', authMiddleware, (req, res) =>
 {
-  const ultimoAcesso = req.cookies.ultimo_acesso || 'Primeiro acesso.';
-  res.render('menu', { ultimoAcesso });
+  // CORREÇÃO: Lógica movida para cá
+  const ultimoAcessoParaExibir = req.cookies.ultimo_acesso || 'Este é o seu primeiro acesso!';
+
+  const agora = new Date();
+  const novoUltimoAcesso = agora.toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    timeZone: 'America/Sao_Paulo'
+  });
+
+  res.cookie('ultimo_acesso', novoUltimoAcesso, { maxAge: 900000, httpOnly: true });
+  
+  res.render('menu', { ultimoAcesso: ultimoAcessoParaExibir });
 });
 
 app.get('/cadastrar-equipe', authMiddleware, (req, res) =>

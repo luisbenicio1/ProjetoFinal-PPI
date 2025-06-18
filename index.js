@@ -3,7 +3,6 @@ import express from 'express';
 import session from 'express-session';
 import cookieParser from 'cookie-parser';
 import path from 'path';
-import { createClient } from '@vercel/kv';
 import { fileURLToPath } from 'url';
 
 const app = express();
@@ -12,22 +11,22 @@ const PORT = process.env.PORT || 3000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const kv = createClient({
-  url: process.env.KV_URL,
-  token: process.env.KV_REST_API_TOKEN,
-});
+let equipes = [];
+let jogadores = [];
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
 app.use(session({
   secret: 'seu-segredo-de-sessao-super-secreto',
   resave: false,
   saveUninitialized: true,
   cookie: { maxAge: 30 * 60 * 1000 }
 }));
+
 app.use('/static', express.static(path.join(__dirname, 'public')));
 
 const authMiddleware = (req, res, next) =>
@@ -57,7 +56,7 @@ app.post('/login', (req, res) =>
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
-      timeZone: 'America/Sao_Paulo' // Correção aplicada aqui
+      timeZone: 'America/Sao_Paulo'
     });
     res.cookie('ultimo_acesso', dataHoraFormatada, { maxAge: 900000, httpOnly: true });
     res.redirect('/menu');
@@ -89,112 +88,85 @@ app.get('/cadastrar-equipe', authMiddleware, (req, res) =>
   res.render('cadastrar-equipe', { error: null, success: null });
 });
 
-app.post('/cadastrar-equipe', authMiddleware, async (req, res) =>
+app.post('/cadastrar-equipe', authMiddleware, (req, res) =>
 {
   const { nomeEquipe, nomeTecnico, telefoneTecnico } = req.body;
   if (!nomeEquipe || !nomeTecnico || !telefoneTecnico) {
     return res.render('cadastrar-equipe', { error: 'Todos os campos são obrigatórios.', success: null });
   }
-  try {
-    const id = `equipe:${Date.now()}`;
-    await kv.hset(id, { id, nomeEquipe, nomeTecnico, telefoneTecnico });
-    res.redirect('/listar-equipes');
-  } catch (error) {
-    res.render('cadastrar-equipe', { error: 'Erro ao salvar a equipe.', success: null });
-  }
+  
+  const novaEquipe = {
+    id: `equipe:${Date.now()}`,
+    nomeEquipe,
+    nomeTecnico,
+    telefoneTecnico
+  };
+  equipes.push(novaEquipe);
+  
+  res.redirect('/listar-equipes');
 });
 
-app.get('/listar-equipes', authMiddleware, async (req, res) =>
+app.get('/listar-equipes', authMiddleware, (req, res) =>
 {
-  try {
-    const keys = await kv.keys('equipe:*');
-    if (keys.length === 0) {
-        return res.render('listar-equipes', { equipes: [] });
-    }
-    const equipes = await kv.mget(...keys);
-    res.render('listar-equipes', { equipes });
-  } catch (error) {
-    res.status(500).send("Erro ao buscar equipes.");
-  }
+  res.render('listar-equipes', { equipes: equipes });
 });
 
-app.get('/cadastrar-jogador', authMiddleware, async (req, res) =>
+app.get('/cadastrar-jogador', authMiddleware, (req, res) =>
 {
-  try {
-    const equipeKeys = await kv.keys('equipe:*');
-    if (equipeKeys.length === 0) {
-        return res.render('cadastrar-jogador', { equipes: [], error: 'Cadastre uma equipe primeiro!', success: null });
-    }
-    const equipes = await kv.mget(...equipeKeys);
-    res.render('cadastrar-jogador', { equipes, error: null, success: null });
-  } catch (error) {
-    res.status(500).send("Erro ao carregar o formulário.");
+  if (equipes.length === 0) {
+      return res.render('cadastrar-jogador', { equipes: [], error: 'Cadastre uma equipe primeiro!', success: null });
   }
+  res.render('cadastrar-jogador', { equipes: equipes, error: null, success: null });
 });
 
-app.post('/cadastrar-jogador', authMiddleware, async (req, res) =>
+app.post('/cadastrar-jogador', authMiddleware, (req, res) =>
 {
   const { nome, numero, nascimento, altura, genero, posicao, equipeId } = req.body;
-  let equipes = [];
-  try {
-    const equipeKeys = await kv.keys('equipe:*');
-    if (equipeKeys.length > 0) {
-        equipes = await kv.mget(...equipeKeys);
-    }
-
-    if (!nome || !numero || !nascimento || !altura || !genero || !posicao || !equipeId) {
-      return res.render('cadastrar-jogador', { equipes, error: 'Todos os campos são obrigatórios.', success: null });
-    }
-
-    const jogadoresDaEquipeKeys = await kv.keys(`jogador:*-${equipeId}`);
-    if (jogadoresDaEquipeKeys.length >= 6) {
-      return res.render('cadastrar-jogador', { equipes, error: 'A equipe selecionada já possui 6 jogadores.', success: null });
-    }
-
-    const id = `jogador:${Date.now()}-${equipeId}`;
-    await kv.hset(id, { id, nome, numero, nascimento, altura, genero, posicao, equipeId });
-    res.redirect('/listar-jogadores');
-
-  } catch (error) {
-    console.error(error);
-    res.render('cadastrar-jogador', { equipes, error: 'Erro ao salvar o jogador.', success: null });
+  
+  if (!nome || !numero || !nascimento || !altura || !genero || !posicao || !equipeId) {
+    return res.render('cadastrar-jogador', { equipes: equipes, error: 'Todos os campos são obrigatórios.', success: null });
   }
+
+  const jogadoresDaEquipe = jogadores.filter(j => j.equipeId === equipeId);
+  if (jogadoresDaEquipe.length >= 6) {
+    return res.render('cadastrar-jogador', { equipes: equipes, error: 'A equipe selecionada já possui 6 jogadores.', success: null });
+  }
+
+  const novoJogador = {
+    id: `jogador:${Date.now()}-${equipeId}`,
+    nome,
+    numero,
+    nascimento,
+    altura,
+    genero,
+    posicao,
+    equipeId
+  };
+  jogadores.push(novoJogador);
+
+  res.redirect('/listar-jogadores');
 });
 
-app.get('/listar-jogadores', authMiddleware, async (req, res) =>
+app.get('/listar-jogadores', authMiddleware, (req, res) =>
 {
-  try {
-    const jogadorKeys = await kv.keys('jogador:*');
-    const equipeKeys = await kv.keys('equipe:*');
+  const equipesMap = equipes.reduce((acc, equipe) => {
+    acc[equipe.id] = equipe;
+    return acc;
+  }, {});
+  
+  const jogadoresPorEquipe = {};
 
-    if (jogadorKeys.length === 0) {
-        return res.render('listar-jogadores', { jogadoresPorEquipe: {} });
+  jogadores.forEach(jogador => {
+    if (!jogadoresPorEquipe[jogador.equipeId]) {
+      jogadoresPorEquipe[jogador.equipeId] = {
+        equipe: equipesMap[jogador.equipeId] || { nomeEquipe: 'Equipe não encontrada' },
+        jogadores: []
+      };
     }
+    jogadoresPorEquipe[jogador.equipeId].jogadores.push(jogador);
+  });
 
-    const jogadores = await kv.mget(...jogadorKeys);
-    const equipes = equipeKeys.length > 0 ? await kv.mget(...equipeKeys) : [];
-
-    const equipesMap = equipes.reduce((acc, equipe) => {
-      acc[equipe.id] = equipe;
-      return acc;
-    }, {});
-    
-    const jogadoresPorEquipe = {};
-
-    jogadores.forEach(jogador => {
-      if (!jogadoresPorEquipe[jogador.equipeId]) {
-        jogadoresPorEquipe[jogador.equipeId] = {
-          equipe: equipesMap[jogador.equipeId] || { nomeEquipe: 'Equipe não encontrada' },
-          jogadores: []
-        };
-      }
-      jogadoresPorEquipe[jogador.equipeId].jogadores.push(jogador);
-    });
-
-    res.render('listar-jogadores', { jogadoresPorEquipe });
-  } catch (error) {
-    res.status(500).send("Erro ao buscar jogadores.");
-  }
+  res.render('listar-jogadores', { jogadoresPorEquipe });
 });
 
 app.listen(PORT, () =>

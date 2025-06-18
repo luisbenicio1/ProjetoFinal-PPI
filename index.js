@@ -48,7 +48,7 @@ app.post('/login', (req, res) =>
   const { username, password } = req.body;
   if (username === 'admin' && password === 'admin') {
     req.session.user = { username: 'admin' };
-    res.redirect('/menu'); // CORREÇÃO: Lógica do cookie removida daqui
+    res.redirect('/menu');
   } else {
     res.render('login', { error: 'Usuário ou senha inválidos' });
   }
@@ -68,7 +68,6 @@ app.get('/', authMiddleware, (req, res) =>
 
 app.get('/menu', authMiddleware, (req, res) =>
 {
-  // CORREÇÃO: Lógica movida para cá
   const ultimoAcessoParaExibir = req.cookies.ultimo_acesso || 'Este é o seu primeiro acesso!';
 
   const agora = new Date();

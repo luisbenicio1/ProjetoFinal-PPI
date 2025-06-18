@@ -56,7 +56,6 @@ app.post('/login', (req, res) =>
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit'
-      timeZone: 'America/Sao_Paulo'
     });
     res.cookie('ultimo_acesso', dataHoraFormatada, { maxAge: 900000, httpOnly: true });
     res.redirect('/menu');

@@ -1,7 +1,9 @@
+import 'dotenv/config';
 import express from 'express';
 import session from 'express-session';
 import cookieParser from 'cookie-parser';
 import path from 'path';
+import { createClient } from '@vercel/kv';
 import { fileURLToPath } from 'url';
 
 const app = express();
@@ -10,11 +12,10 @@ const PORT = process.env.PORT || 3000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Armazenamento em memória
-let equipes = [];
-let jogadores = [];
-let nextEquipeId = 1;
-let nextJogadorId = 1;
+const kv = createClient({
+  url: process.env.KV_URL,
+  token: process.env.KV_REST_API_TOKEN,
+});
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -55,7 +56,8 @@ app.post('/login', (req, res) =>
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit'
+      second: '2-digit',
+      timeZone: 'America/Sao_Paulo' // Correção aplicada aqui
     });
     res.cookie('ultimo_acesso', dataHoraFormatada, { maxAge: 900000, httpOnly: true });
     res.redirect('/menu');
@@ -87,76 +89,102 @@ app.get('/cadastrar-equipe', authMiddleware, (req, res) =>
   res.render('cadastrar-equipe', { error: null, success: null });
 });
 
-app.post('/cadastrar-equipe', authMiddleware, (req, res) =>
+app.post('/cadastrar-equipe', authMiddleware, async (req, res) =>
 {
   const { nomeEquipe, nomeTecnico, telefoneTecnico } = req.body;
   if (!nomeEquipe || !nomeTecnico || !telefoneTecnico) {
     return res.render('cadastrar-equipe', { error: 'Todos os campos são obrigatórios.', success: null });
   }
-
-  const novaEquipe = {
-    id: nextEquipeId++,
-    nomeEquipe,
-    nomeTecnico,
-    telefoneTecnico
-  };
-  equipes.push(novaEquipe);
-
-  res.redirect('/listar-equipes');
+  try {
+    const id = `equipe:${Date.now()}`;
+    await kv.hset(id, { id, nomeEquipe, nomeTecnico, telefoneTecnico });
+    res.redirect('/listar-equipes');
+  } catch (error) {
+    res.render('cadastrar-equipe', { error: 'Erro ao salvar a equipe.', success: null });
+  }
 });
 
-app.get('/listar-equipes', authMiddleware, (req, res) =>
+app.get('/listar-equipes', authMiddleware, async (req, res) =>
 {
-  res.render('listar-equipes', { equipes: equipes });
+  try {
+    const keys = await kv.keys('equipe:*');
+    if (keys.length === 0) {
+        return res.render('listar-equipes', { equipes: [] });
+    }
+    const equipes = await kv.mget(...keys);
+    res.render('listar-equipes', { equipes });
+  } catch (error) {
+    res.status(500).send("Erro ao buscar equipes.");
+  }
 });
 
-app.get('/cadastrar-jogador', authMiddleware, (req, res) =>
+app.get('/cadastrar-jogador', authMiddleware, async (req, res) =>
 {
-    if (equipes.length === 0) {
+  try {
+    const equipeKeys = await kv.keys('equipe:*');
+    if (equipeKeys.length === 0) {
         return res.render('cadastrar-jogador', { equipes: [], error: 'Cadastre uma equipe primeiro!', success: null });
     }
-    res.render('cadastrar-jogador', { equipes: equipes, error: null, success: null });
+    const equipes = await kv.mget(...equipeKeys);
+    res.render('cadastrar-jogador', { equipes, error: null, success: null });
+  } catch (error) {
+    res.status(500).send("Erro ao carregar o formulário.");
+  }
 });
 
-app.post('/cadastrar-jogador', authMiddleware, (req, res) =>
+app.post('/cadastrar-jogador', authMiddleware, async (req, res) =>
 {
   const { nome, numero, nascimento, altura, genero, posicao, equipeId } = req.body;
+  let equipes = [];
+  try {
+    const equipeKeys = await kv.keys('equipe:*');
+    if (equipeKeys.length > 0) {
+        equipes = await kv.mget(...equipeKeys);
+    }
 
-  if (!nome || !numero || !nascimento || !altura || !genero || !posicao || !equipeId) {
-    return res.render('cadastrar-jogador', { equipes: equipes, error: 'Todos os campos são obrigatórios.', success: null });
+    if (!nome || !numero || !nascimento || !altura || !genero || !posicao || !equipeId) {
+      return res.render('cadastrar-jogador', { equipes, error: 'Todos os campos são obrigatórios.', success: null });
+    }
+
+    const jogadoresDaEquipeKeys = await kv.keys(`jogador:*-${equipeId}`);
+    if (jogadoresDaEquipeKeys.length >= 6) {
+      return res.render('cadastrar-jogador', { equipes, error: 'A equipe selecionada já possui 6 jogadores.', success: null });
+    }
+
+    const id = `jogador:${Date.now()}-${equipeId}`;
+    await kv.hset(id, { id, nome, numero, nascimento, altura, genero, posicao, equipeId });
+    res.redirect('/listar-jogadores');
+
+  } catch (error) {
+    console.error(error);
+    res.render('cadastrar-jogador', { equipes, error: 'Erro ao salvar o jogador.', success: null });
   }
-
-  const jogadoresDaEquipe = jogadores.filter(j => j.equipeId == equipeId);
-  if (jogadoresDaEquipe.length >= 6) {
-    return res.render('cadastrar-jogador', { equipes: equipes, error: 'A equipe selecionada já possui 6 jogadores.', success: null });
-  }
-  
-  const novoJogador = {
-      id: nextJogadorId++,
-      nome,
-      numero,
-      nascimento,
-      altura,
-      genero,
-      posicao,
-      equipeId: parseInt(equipeId)
-  };
-  jogadores.push(novoJogador);
-
-  res.redirect('/listar-jogadores');
 });
 
-app.get('/listar-jogadores', authMiddleware, (req, res) =>
+app.get('/listar-jogadores', authMiddleware, async (req, res) =>
 {
+  try {
+    const jogadorKeys = await kv.keys('jogador:*');
+    const equipeKeys = await kv.keys('equipe:*');
+
+    if (jogadorKeys.length === 0) {
+        return res.render('listar-jogadores', { jogadoresPorEquipe: {} });
+    }
+
+    const jogadores = await kv.mget(...jogadorKeys);
+    const equipes = equipeKeys.length > 0 ? await kv.mget(...equipeKeys) : [];
+
+    const equipesMap = equipes.reduce((acc, equipe) => {
+      acc[equipe.id] = equipe;
+      return acc;
+    }, {});
+    
     const jogadoresPorEquipe = {};
 
     jogadores.forEach(jogador => {
-      const equipeDoJogador = equipes.find(e => e.id === jogador.equipeId);
-      if (!equipeDoJogador) return;
-
       if (!jogadoresPorEquipe[jogador.equipeId]) {
         jogadoresPorEquipe[jogador.equipeId] = {
-          equipe: equipeDoJogador,
+          equipe: equipesMap[jogador.equipeId] || { nomeEquipe: 'Equipe não encontrada' },
           jogadores: []
         };
       }
@@ -164,6 +192,9 @@ app.get('/listar-jogadores', authMiddleware, (req, res) =>
     });
 
     res.render('listar-jogadores', { jogadoresPorEquipe });
+  } catch (error) {
+    res.status(500).send("Erro ao buscar jogadores.");
+  }
 });
 
 app.listen(PORT, () =>
